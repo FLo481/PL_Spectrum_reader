@@ -56,14 +56,11 @@ def plot_spectrum ():
     intensity_temp1, wavelength_temp1 = reader(PLspectrum)
     intensity_temp2, wavelength_temp2 = reader(PLbackground)
     
-    #subtracting the background from spectrum
+    #subtracting the background
     
     for i in range(0,l):
         y_plt_temp1.append(float(intensity_temp1[i]) + float(intensity_temp1[i+l]))
         x_plt_temp.append(wavelength_temp1[i])
-
-
-    for i in range(0,l):
         y_plt_temp2.append(float(intensity_temp2[i]) + float(intensity_temp2[i+l]) + float(intensity_temp2[i+2*l]))
 
     for i in range(0,l):
