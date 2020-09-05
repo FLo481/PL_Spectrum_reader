@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import scipy.optimize
+import matplotlib._color_data as mcd
 #from scipy.odr import ODR, Model, Data, RealData
 
 def Lorentz_func(x, a, Gamma, x_0):
@@ -42,7 +43,7 @@ def reader (dirName):
 
     return intensity, wavelength
 
-def data_fit (x_min, x_max, x_temp, y_temp):
+def data_fit (x_min, x_max, x_temp, y_temp, label, color):
     
     x_temp1 = []
     y_temp1 = []
@@ -77,7 +78,7 @@ def data_fit (x_min, x_max, x_temp, y_temp):
     #plt.plot(x_plt, Lorentz_func(myoutput.beta, x_plt))
 
     params, params_cov = scipy.optimize.curve_fit(Lorentz_func, x_plt1, y_plt1,bounds=([0,0,x_min],[np.inf, np.inf, x_max]), sigma = None, absolute_sigma = True, method = 'trf')
-    plt.plot(x_plt, Lorentz_func(x_plt, params[0], params[1], params[2]), label= r"Lorentz fit")
+    plt.plot(x_plt, Lorentz_func(x_plt, params[0], params[1], params[2]), label=label, color=color)
     perr = np.sqrt(np.diag(params_cov))/np.sqrt(len(x_plt1))
     print("Maximum position : " + str(params[2]) + "+/-" + str(perr[2]))
 
@@ -124,11 +125,14 @@ def plot_spectrum ():
 
     plt.errorbar(x_plt, y_plt, yerr = None, fmt = 'o', markersize = .5)
 
-    data_fit(507, 517, x_plt_temp, y_plt_temp)
-    data_fit(545, 555, x_plt_temp, y_plt_temp)
-    data_fit(555, 580, x_plt_temp, y_plt_temp)
-    data_fit(633, 641.276, x_plt_temp, y_plt_temp)
-    data_fit(645, 1000, x_plt_temp, y_plt_temp)
+    data_fit(507, 517, x_plt_temp, y_plt_temp, "Lorentz fit 1",  '#000000')
+    data_fit(545, 555, x_plt_temp, y_plt_temp, "Lorentz fit 2", '#c65102')
+    data_fit(555, 580, x_plt_temp, y_plt_temp, "Lorentz fit 3", '#89fe05')
+    data_fit(580, 591, x_plt_temp, y_plt_temp, "Lorentz fit 4", '#dbb40c')
+    data_fit(610, 622, x_plt_temp, y_plt_temp, "Lorentz fit 5", '#fe01b1')
+    data_fit(633, 641.276, x_plt_temp, y_plt_temp, "Lorentz fit 6", '#ff000d')
+    data_fit(647, 668, x_plt_temp, y_plt_temp, "Lorentz fit 7", '#80013f')
+    data_fit(671, 690, x_plt_temp, y_plt_temp, "Lorentz fit 8", '#001146')
 
     del x_plt_temp
     del y_plt_temp
