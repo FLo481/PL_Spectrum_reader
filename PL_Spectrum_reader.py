@@ -2,12 +2,12 @@ import csv
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+#import math
 import scipy.optimize
 
 def Lorentz_func(x, y0, a, Gamma, x0):
 
-    return (y0 + a*Gamma**2/((x-x0)**2+(Gamma)**2))
+    return (y0 + a*Gamma/((x-x0)**2+(Gamma)**2))
 
 #def Multi_Lorentz(x, *params):
 
@@ -62,52 +62,31 @@ def csv_writer (x_plt_temp, y_plt_temp):
         for i in range(0, len(x_plt_temp)):
             writer.writerow([str(x_plt_temp[i]) + ";" + str(y_plt_temp[i])])
 
-def data_fit (x_min, x_max ,x_temp, y_temp, y_err_temp):
+def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
     
-    x_temp1 = []
-    y_temp1 = []
-    y_err_temp1 = []
     initial_values = []
-    x_plt = np.empty(len(x_temp), dtype = float)
-    y_plt = np.empty(len(y_temp), dtype = float)
-
-    x_plt[:] = x_temp
-    y_plt[:] = y_temp
+    x_plt1 = np.empty([], dtype = float)
+    y_plt1 = np.empty([], dtype = float)
+    y_err1 = np.empty([], dtype = float)
 
     for i in range(0, 1044):
-        if x_max > float(x_temp[i]) > x_min:
-            x_temp1.append(x_temp[i])
-            y_temp1.append(y_temp[i])
-            y_err_temp1.append(y_err_temp[i])
+        if x_max > x_plt[i] > x_min:
+            x_plt1 = np.append(x_plt, x_plt[i])
+            y_plt1 = np.append(y_plt, y_plt[i])
+            y_err1 = np.append(y_err, y_err[i])
 
-    
-    del x_temp
-    del y_temp
-    #del y_err_temp
+    num = 3
 
-    x_plt1 = np.empty(len(x_temp1), dtype = float)
-    y_plt1 = np.empty(len(y_temp1), dtype = float)
-    y_err_plt1 = np.empty(len(y_temp1), dtype = float)
+    for i in range(num):
+        initial_values +=[0.01, 0.1, 2, x_min+i*15]
 
-    x_plt1[:] = x_temp1
-    y_plt1[:] = y_temp1
-    y_err_plt1[:] = y_err_temp1
-
-    del x_temp1
-    del y_temp1
-
-    num = 5
-
-    for i in range(0, num):
-        initial_values +=[0.01, 0.4, 5, 546+i*18]
-
-    lower = (-0.5, 0, 1, x_min)*num
-    upper = (0.5, 2000, 200, x_max)*num
+    lower = [-0.5, 0, 1, x_min]*num
+    upper = [0.5, 1, 300, 950]*num
     bounds = (lower, upper)
 
     #bounds = ([1,1,510,1,1,550,1,1,556,1,1,632,1,1,646],[np.inf,150,516,np.inf,150,555,np.inf,150,576,np.inf,150,641,np.inf,150,669])
 
-    params, params_cov = scipy.optimize.curve_fit(Multi_Lorentz, x_plt, y_plt, p0 = initial_values, bounds = bounds, sigma = y_err_temp, absolute_sigma = True, maxfev=9999)
+    params, params_cov = scipy.optimize.curve_fit(Multi_Lorentz, x_plt1, y_plt1, p0 = initial_values, sigma = y_err1, bounds = bounds, absolute_sigma = True, maxfev=100000)
     #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[3:]))
     #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[:3]))
     plt.plot(x_plt, Multi_Lorentz(x_plt, *params))
@@ -122,11 +101,19 @@ def data_fit (x_min, x_max ,x_temp, y_temp, y_err_temp):
 def plot_spectrum ():
 
     x_plt_temp = []
+    y_plt_temp = []
     y_plt_temp1 = []
     y_plt_temp2 = []
     y_plt_temp3 = []
-    y_plt_temp = []
     y_plt_err_temp = []
+    y_plt_err_temp1 = []
+    y_plt_err_temp2 = []
+    y_plt_err_temp3 = []
+    intensity_err1_1 = []
+    intensity_err1_2 = []
+    intensity_err2_1 = []
+    intensity_err2_2 = []
+    intensity_err2_3 = []
     l = 1044 #number of recorded values
     x_plt = np.empty(l, dtype = float)
     y_plt = np.empty(l, dtype = float)
@@ -136,41 +123,76 @@ def plot_spectrum ():
     PLbackground = r"C:\Users\Flo\Desktop\F Praktikum\ODMR\Daten\PL_spectrum_background"
     intensity_temp1, wavelength_temp1 = reader(PLspectrum)
     intensity_temp2, wavelength_temp2 = reader(PLbackground)
+
+    #calculating y uncertainties (Poisson uncertainties)
+
+    intensity_temp1 = list(map(float, intensity_temp1 ))
+    intensity_temp2 = list(map(float, intensity_temp2 ))
+
+    for i in range(0,l):
+        if intensity_temp1[i] > 0.0:
+            intensity_err1_1.append(intensity_temp1[i]/(np.sqrt(intensity_temp1[i])))
+        elif intensity_temp1[i] < 0.0:
+            intensity_err1_1.append(0)
+        if intensity_temp1[i+l] > 0.0:
+            intensity_err1_2.append(intensity_temp1[i+l]/(np.sqrt(intensity_temp1[i+l])))
+        elif intensity_temp1[i+l] < 0.0:
+            intensity_err1_2.append(0)
+        if intensity_temp2[i] > 0.0:
+            intensity_err2_1.append(intensity_temp2[i]/(np.sqrt(intensity_temp2[i])))
+        elif intensity_temp2[i] < 0.0:
+            intensity_err2_1.append(0)
+        if intensity_temp2[i+l] > 0.0:
+            intensity_err2_2.append(intensity_temp2[i+l]/(np.sqrt(intensity_temp2[i+l])))
+        elif intensity_temp2[i+l] < 0.0:
+            intensity_err2_2.append(0)
+        if intensity_temp2[i+2*l] > 0.0:
+            intensity_err2_3.append(intensity_temp2[i+2*l]/(np.sqrt(intensity_temp2[i+2*l])))
+        elif intensity_temp2[i+2*l] < 0.0:
+            intensity_err2_3.append(0)
     
     #subtracting the background
     
     for i in range(0,l):
-        y_plt_temp1.append(float(intensity_temp1[i]) + float(intensity_temp1[i+l]))
+        y_plt_temp1.append(intensity_temp1[i] + intensity_temp1[i+l])
         x_plt_temp.append(wavelength_temp1[i])
-        y_plt_temp2.append(float(intensity_temp2[i]) + float(intensity_temp2[i+l]) + float(intensity_temp2[i+2*l]))
+        y_plt_temp2.append(intensity_temp2[i] + intensity_temp2[i+l] + intensity_temp2[i+2*l])
 
     for i in range(0,l):
-        y_plt_temp3.append(float(y_plt_temp1[i]) - float(y_plt_temp2[i]))
+        y_plt_temp3.append(y_plt_temp1[i] - y_plt_temp2[i])
+
+
+    #error propagation
+        
+    for i in range(0,l):
+        y_plt_err_temp1.append(np.sqrt((intensity_err1_1[i])**2 +(intensity_err1_2[i])**2))
+        y_plt_err_temp2.append(np.sqrt((intensity_err2_1[i])**2+(intensity_err2_2[i])**2+(intensity_err2_3[i])**2))
+
+    for i in range(0,l):
+        y_plt_err_temp3.append(np.sqrt((y_plt_err_temp1[i])**2+(y_plt_err_temp2[i])**2))
+
 
     y_max = max(y_plt_temp3) 
     y_max_err = y_max/(np.sqrt(y_max))
 
     for i in range(0,l):
         y_plt_temp.append(y_plt_temp3[i]/(y_max))
-        if float(y_plt_temp3[i]) >= 0.0:
-            y_plt_err_temp.append(y_plt_temp[i]/(np.sqrt(y_plt_temp[i])))
-        elif float(y_plt_temp3[i]) < 0.0:
-            y_plt_err_temp.append(0)
-        y_plt_err[i] = y_plt_temp[i]*np.sqrt((y_max_err/y_max)**2+(y_plt_err_temp[i]/y_plt_temp3[i])**2)
+        y_plt_err_temp.append(y_plt_temp[i]*np.sqrt((y_max_err/y_max)**2+(y_plt_err_temp3[i]/y_plt_temp3[i])**2))
 
    
     x_plt[:] = x_plt_temp
     y_plt[:] = y_plt_temp
+    y_plt_err[:] = y_plt_err_temp
 
     #csv_writer(x_plt_temp, y_plt_temp)
 
     #plot the spectrum
 
-    plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'o', markersize = .5)
+    plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'x', markersize = .5)
 
     #fitting and plotting the fits
 
-    data_fit(510, 900, x_plt_temp, y_plt_temp, y_plt_err)
+    data_fit(541, 900, x_plt, y_plt, y_plt_err)
 
     del x_plt_temp
     del y_plt_temp
