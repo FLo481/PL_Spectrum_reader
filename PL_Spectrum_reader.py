@@ -5,13 +5,27 @@ import numpy as np
 import math
 import scipy.optimize
 
-def Lorentz_func(x, *P):
+def Lorentz_func(x, y0, a, Gamma, x0):
 
-    return P[0]*P[1]/(2*(x-P[2])**2+2*(1/2*P[1])**2)
+    return (y0 + a*Gamma**2/((x-x0)**2+(Gamma)**2))
+
+#def Multi_Lorentz(x, *params):
+
+#    return sum([Lorentz_func(x, *params[i:i+3] ) for i in range(0, 18, 3)])
 
 def Multi_Lorentz(x, *params):
 
-    return sum([Lorentz_func(x, *params[i:i+3] ) for i in range(0, 12, 3)])
+    y = np.zeros_like(x)
+
+    for i in range(0, len(params), 4):
+        y0 = params[i]
+        a = params[i+1]
+        Gamma = params[i+2]
+        x0 = params[i+3]
+
+        y = y + Lorentz_func(x, y0, a, Gamma, x0)
+
+    return y
 
 def reader (dirName):
     
@@ -84,22 +98,22 @@ def data_fit (x_min, x_max ,x_temp, y_temp, y_err_temp):
 
     num = 5
 
-    for i in range(num):
-        initial_values +=[1, 10, x_min+i*18]
+    for i in range(0, num):
+        initial_values +=[0.01, 0.4, 5, 546+i*18]
 
-    lower = (0, 0, x_min)*num
-    upper = (np.inf, 150, x_max)*num
+    lower = (-0.5, 0, 1, x_min)*num
+    upper = (0.5, 2000, 200, x_max)*num
     bounds = (lower, upper)
 
     #bounds = ([1,1,510,1,1,550,1,1,556,1,1,632,1,1,646],[np.inf,150,516,np.inf,150,555,np.inf,150,576,np.inf,150,641,np.inf,150,669])
 
-    params, params_cov = scipy.optimize.curve_fit(Multi_Lorentz, x_plt, y_plt, p0 = initial_values, bounds = bounds, sigma = y_err_temp, absolute_sigma = True, method = 'dogbox', maxfev=9999)
+    params, params_cov = scipy.optimize.curve_fit(Multi_Lorentz, x_plt, y_plt, p0 = initial_values, bounds = bounds, sigma = y_err_temp, absolute_sigma = True, maxfev=9999)
     #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[3:]))
     #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[:3]))
     plt.plot(x_plt, Multi_Lorentz(x_plt, *params))
 
-    for i in range(0,len(params),3):
-        print(params[i+2])
+    for i in range(0, len(params), 4):
+        print(params[i+3])
 
     #perr = np.sqrt(np.diag(params_cov))/np.sqrt(len(x_plt1))
     #print("Maximum position : " + str(params[2]) + "+/-" + str(perr[2]))
@@ -156,7 +170,7 @@ def plot_spectrum ():
 
     #fitting and plotting the fits
 
-    data_fit(500, 950, x_plt_temp, y_plt_temp, y_plt_err)
+    data_fit(510, 900, x_plt_temp, y_plt_temp, y_plt_err)
 
     del x_plt_temp
     del y_plt_temp
