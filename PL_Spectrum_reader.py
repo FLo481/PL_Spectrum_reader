@@ -4,16 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import scipy.optimize
-import matplotlib._color_data as mcd
-#from scipy.odr import ODR, Model, Data, RealData
 
-def Lorentz_func(x, a, Gamma, x_0):
+def Lorentz_func(x, *P):
 
-    return a*Gamma/(2*(x-x_0)**2+2*(1/2*Gamma)**2)
+    return P[0]*P[1]/(2*(x-P[2])**2+2*(1/2*P[1])**2)
 
-#def Lorentz_func(B, x):
+def Multi_Lorentz(x, *params):
 
-#    return 1/(math.pi*2)*B[0]*B[1]/((x-B[2])**2+(1/2*B[1])**2)
+    return sum([Lorentz_func(x, *params[i:i+3] ) for i in range(0, 12, 3)])
 
 def reader (dirName):
     
@@ -43,10 +41,19 @@ def reader (dirName):
 
     return intensity, wavelength
 
-def data_fit (x_min, x_max, x_temp, y_temp, label, color):
+def csv_writer (x_plt_temp, y_plt_temp):
+
+    with open('data.csv', 'w', newline='\n') as file:
+        writer = csv.writer(file)
+        for i in range(0, len(x_plt_temp)):
+            writer.writerow([str(x_plt_temp[i]) + ";" + str(y_plt_temp[i])])
+
+def data_fit (x_min, x_max ,x_temp, y_temp, y_err_temp):
     
     x_temp1 = []
     y_temp1 = []
+    y_err_temp1 = []
+    initial_values = []
     x_plt = np.empty(len(x_temp), dtype = float)
     y_plt = np.empty(len(y_temp), dtype = float)
 
@@ -57,30 +64,45 @@ def data_fit (x_min, x_max, x_temp, y_temp, label, color):
         if x_max > float(x_temp[i]) > x_min:
             x_temp1.append(x_temp[i])
             y_temp1.append(y_temp[i])
+            y_err_temp1.append(y_err_temp[i])
 
     
     del x_temp
     del y_temp
+    #del y_err_temp
 
     x_plt1 = np.empty(len(x_temp1), dtype = float)
     y_plt1 = np.empty(len(y_temp1), dtype = float)
+    y_err_plt1 = np.empty(len(y_temp1), dtype = float)
 
     x_plt1[:] = x_temp1
     y_plt1[:] = y_temp1
+    y_err_plt1[:] = y_err_temp1
 
     del x_temp1
     del y_temp1
 
-    #data = RealData(x_plt1, y_plt1)
-    #model = Model(Lorentz_func)
-    #myodr = ODR(data, model, beta0=[1, 1, x_min])
-    #myoutput = myodr.run()
-    #plt.plot(x_plt, Lorentz_func(myoutput.beta, x_plt))
+    num = 5
 
-    params, params_cov = scipy.optimize.curve_fit(Lorentz_func, x_plt1, y_plt1,bounds=([0,0,x_min],[np.inf, np.inf, x_max]), sigma = None, absolute_sigma = True, method = 'trf')
-    plt.plot(x_plt, Lorentz_func(x_plt, params[0], params[1], params[2]), label=label, color=color)
-    perr = np.sqrt(np.diag(params_cov))/np.sqrt(len(x_plt1))
-    print("Maximum position : " + str(params[2]) + "+/-" + str(perr[2]))
+    for i in range(num):
+        initial_values +=[1, 10, x_min+i*18]
+
+    lower = (0, 0, x_min)*num
+    upper = (np.inf, 150, x_max)*num
+    bounds = (lower, upper)
+
+    #bounds = ([1,1,510,1,1,550,1,1,556,1,1,632,1,1,646],[np.inf,150,516,np.inf,150,555,np.inf,150,576,np.inf,150,641,np.inf,150,669])
+
+    params, params_cov = scipy.optimize.curve_fit(Multi_Lorentz, x_plt, y_plt, p0 = initial_values, bounds = bounds, sigma = y_err_temp, absolute_sigma = True, method = 'dogbox', maxfev=9999)
+    #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[3:]))
+    #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[:3]))
+    plt.plot(x_plt, Multi_Lorentz(x_plt, *params))
+
+    for i in range(0,len(params),3):
+        print(params[i+2])
+
+    #perr = np.sqrt(np.diag(params_cov))/np.sqrt(len(x_plt1))
+    #print("Maximum position : " + str(params[2]) + "+/-" + str(perr[2]))
 
 
 def plot_spectrum ():
@@ -88,10 +110,13 @@ def plot_spectrum ():
     x_plt_temp = []
     y_plt_temp1 = []
     y_plt_temp2 = []
+    y_plt_temp3 = []
     y_plt_temp = []
+    y_plt_err_temp = []
     l = 1044 #number of recorded values
     x_plt = np.empty(l, dtype = float)
     y_plt = np.empty(l, dtype = float)
+    y_plt_err = np.empty(l, dtype = float)
 
     PLspectrum = r"C:\Users\Flo\Desktop\F Praktikum\ODMR\Daten\PL_spectrum"
     PLbackground = r"C:\Users\Flo\Desktop\F Praktikum\ODMR\Daten\PL_spectrum_background"
@@ -106,36 +131,38 @@ def plot_spectrum ():
         y_plt_temp2.append(float(intensity_temp2[i]) + float(intensity_temp2[i+l]) + float(intensity_temp2[i+2*l]))
 
     for i in range(0,l):
-        y_plt_temp.append(float(y_plt_temp1[i]) - float(y_plt_temp2[i]))
+        y_plt_temp3.append(float(y_plt_temp1[i]) - float(y_plt_temp2[i]))
 
-    y_max = max(y_plt_temp)
+    y_max = max(y_plt_temp3) 
+    y_max_err = y_max/(np.sqrt(y_max))
 
     for i in range(0,l):
-        y_plt_temp[i] = y_plt_temp[i]/(y_max)
-    
+        y_plt_temp.append(y_plt_temp3[i]/(y_max))
+        if float(y_plt_temp3[i]) >= 0.0:
+            y_plt_err_temp.append(y_plt_temp[i]/(np.sqrt(y_plt_temp[i])))
+        elif float(y_plt_temp3[i]) < 0.0:
+            y_plt_err_temp.append(0)
+        y_plt_err[i] = y_plt_temp[i]*np.sqrt((y_max_err/y_max)**2+(y_plt_err_temp[i]/y_plt_temp3[i])**2)
+
+   
     x_plt[:] = x_plt_temp
     y_plt[:] = y_plt_temp
 
-    #create .csv file
+    #csv_writer(x_plt_temp, y_plt_temp)
 
-    #with open('data.csv', 'w', newline='\n') as file:
-    #    writer = csv.writer(file)
-    #    for i in range(0, len(x_plt_temp)):
-    #        writer.writerow([str(x_plt_temp[i]) + ";" + str(y_plt_temp[i])])
+    #plot the spectrum
 
-    plt.errorbar(x_plt, y_plt, yerr = None, fmt = 'o', markersize = .5)
+    plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'o', markersize = .5)
 
-    data_fit(507, 517, x_plt_temp, y_plt_temp, "Lorentz fit 1",  '#000000')
-    data_fit(545, 555, x_plt_temp, y_plt_temp, "Lorentz fit 2", '#c65102')
-    data_fit(555, 580, x_plt_temp, y_plt_temp, "Lorentz fit 3", '#89fe05')
-    data_fit(580, 591, x_plt_temp, y_plt_temp, "Lorentz fit 4", '#dbb40c')
-    data_fit(610, 622, x_plt_temp, y_plt_temp, "Lorentz fit 5", '#fe01b1')
-    data_fit(633, 641.276, x_plt_temp, y_plt_temp, "Lorentz fit 6", '#ff000d')
-    data_fit(647, 668, x_plt_temp, y_plt_temp, "Lorentz fit 7", '#80013f')
-    data_fit(671, 690, x_plt_temp, y_plt_temp, "Lorentz fit 8", '#001146')
+    #fitting and plotting the fits
+
+    data_fit(500, 950, x_plt_temp, y_plt_temp, y_plt_err)
 
     del x_plt_temp
     del y_plt_temp
+    del y_plt_temp1
+    del y_plt_temp2
+    del y_plt_temp3
 
     plt.xlabel("Wavelength [nm]", fontsize=16)
     plt.ylabel("Photoluminescence intensity [a.u.]", fontsize=16)
