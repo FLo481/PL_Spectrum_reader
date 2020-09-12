@@ -2,7 +2,6 @@ import csv
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-#import math
 import scipy.optimize
 
 def Gauss_func(x, y0, a, Gamma, x0):
@@ -79,27 +78,41 @@ def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
             y_plt1 = np.append(y_plt, y_plt[i])
             y_err1 = np.append(y_err, y_err[i])
 
-    num = 9
+    num = 7
+
+    x0_int_vals = [575,588,603,620,638,658,674]
 
     for i in range(num):
-        initial_values +=[0.01, 0.1, 0.1, x_min+i*15]
+        initial_values +=[0.01, 0.1, 5, x0_int_vals[i]]
 
-    lower = [-0.5, 0, 0.1, x_min]*num
-    upper = [0.5, 1, 200, 900]*num
+    lower = [-0.5, 0, 0, x_min]*num
+    upper = [0.5, 1, 200, x_max]*num
     bounds = (lower, upper)
 
     #bounds = ([1,1,510,1,1,550,1,1,556,1,1,632,1,1,646],[np.inf,150,516,np.inf,150,555,np.inf,150,576,np.inf,150,641,np.inf,150,669])
 
     params, params_cov = scipy.optimize.curve_fit(Multi_Gauss, x_plt1, y_plt1, p0 = initial_values, sigma = y_err1, bounds = bounds, absolute_sigma = True)
-    #print(params)
-    for i in range(0, len(params), 4):
-        plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]))
+    plt.plot(x_plt, Multi_Gauss(x_plt, *params), label = 'Commulative Gauss fit')
 
     for i in range(0, len(params), 4):
+        plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]))
         print(params[i+3])
+
+    #print(params)
 
     #perr = np.sqrt(np.diag(params_cov))/np.sqrt(len(x_plt1))
     #print("Maximum position : " + str(params[2]) + "+/-" + str(perr[2]))
+
+    #calculation of red. chi squared
+
+    fit = np.empty(len(x_plt1), dtype = float)
+    chi_squared = 0
+    fit[:] = Multi_Gauss(x_plt1, *params)
+
+    for i in range(0, len(x_plt1)):
+        chi_squared += (y_plt1[i] - fit[i])**2/(y_err1[i])**2
+
+    print("red. Chi squared : ",chi_squared/(len(x_plt1)-4))
 
 
 def plot_spectrum ():
@@ -192,11 +205,11 @@ def plot_spectrum ():
 
     #plot the spectrum
 
-    plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'x', markersize = .5)
+    plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'x', markersize = .5, label = '')
 
     #fitting and plotting the fits
 
-    data_fit(541, 900, x_plt, y_plt, y_plt_err)
+    data_fit(555, 800, x_plt, y_plt, y_plt_err)
 
     del x_plt_temp
     del y_plt_temp
@@ -205,8 +218,10 @@ def plot_spectrum ():
     del y_plt_temp3
 
     plt.xlabel("Wavelength [nm]", fontsize=16)
-    plt.ylabel("Photoluminescence intensity [a.u.]", fontsize=16)
+    plt.ylabel("PL intensity [arbitrary units]", fontsize=16)
     plt.grid()
+    plt.legend()
+    plt.xlim(500,900)
 
     plt.show()
     plt.clf()
