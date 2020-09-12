@@ -5,15 +5,15 @@ import numpy as np
 #import math
 import scipy.optimize
 
-def Lorentz_func(x, y0, a, Gamma, x0):
+def Gauss_func(x, y0, a, Gamma, x0):
 
-    return (y0 + a*Gamma/((x-x0)**2+(Gamma)**2))
+    return (y0 + a*np.exp(-(x-x0)**2/(2*Gamma**2)))
 
 #def Multi_Lorentz(x, *params):
 
 #    return sum([Lorentz_func(x, *params[i:i+3] ) for i in range(0, 18, 3)])
 
-def Multi_Lorentz(x, *params):
+def Multi_Gauss(x, *params):
 
     y = np.zeros_like(x)
 
@@ -23,7 +23,7 @@ def Multi_Lorentz(x, *params):
         Gamma = params[i+2]
         x0 = params[i+3]
 
-        y = y + Lorentz_func(x, y0, a, Gamma, x0)
+        y = y + Gauss_func(x, y0, a, Gamma, x0)
 
     return y
 
@@ -55,12 +55,16 @@ def reader (dirName):
 
     return intensity, wavelength
 
-def csv_writer (x_plt_temp, y_plt_temp):
+def csv_writer (x_plt, y_plt, y_plt_err):
 
     with open('data.csv', 'w', newline='\n') as file:
         writer = csv.writer(file)
-        for i in range(0, len(x_plt_temp)):
-            writer.writerow([str(x_plt_temp[i]) + ";" + str(y_plt_temp[i])])
+        for i in range(0, len(x_plt)):
+            writer.writerow([str(x_plt[i]) + ";" + str(y_plt[i]) + ";" + str(y_plt_err[i])])
+
+        print("Data written to file %s" % "data.csv")
+
+    file.close()
 
 def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
     
@@ -75,21 +79,21 @@ def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
             y_plt1 = np.append(y_plt, y_plt[i])
             y_err1 = np.append(y_err, y_err[i])
 
-    num = 3
+    num = 9
 
     for i in range(num):
-        initial_values +=[0.01, 0.1, 2, x_min+i*15]
+        initial_values +=[0.01, 0.1, 0.1, x_min+i*15]
 
-    lower = [-0.5, 0, 1, x_min]*num
-    upper = [0.5, 1, 300, 950]*num
+    lower = [-0.5, 0, 0.1, x_min]*num
+    upper = [0.5, 1, 200, 900]*num
     bounds = (lower, upper)
 
     #bounds = ([1,1,510,1,1,550,1,1,556,1,1,632,1,1,646],[np.inf,150,516,np.inf,150,555,np.inf,150,576,np.inf,150,641,np.inf,150,669])
 
-    params, params_cov = scipy.optimize.curve_fit(Multi_Lorentz, x_plt1, y_plt1, p0 = initial_values, sigma = y_err1, bounds = bounds, absolute_sigma = True, maxfev=100000)
-    #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[3:]))
-    #plt.plot(x_plt, Multi_Lorentz(x_plt, *params[:3]))
-    plt.plot(x_plt, Multi_Lorentz(x_plt, *params))
+    params, params_cov = scipy.optimize.curve_fit(Multi_Gauss, x_plt1, y_plt1, p0 = initial_values, sigma = y_err1, bounds = bounds, absolute_sigma = True)
+    #print(params)
+    for i in range(0, len(params), 4):
+        plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]))
 
     for i in range(0, len(params), 4):
         print(params[i+3])
@@ -184,7 +188,7 @@ def plot_spectrum ():
     y_plt[:] = y_plt_temp
     y_plt_err[:] = y_plt_err_temp
 
-    #csv_writer(x_plt_temp, y_plt_temp)
+    #csv_writer(x_plt, y_plt, y_plt_err)
 
     #plot the spectrum
 
