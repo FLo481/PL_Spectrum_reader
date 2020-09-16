@@ -5,9 +5,9 @@ from matplotlib.patches import Patch
 import numpy as np
 import scipy.optimize
 
-def Gauss_func(x, y0, a, Gamma, x0):
+def Gauss_func(x, y0, a, sigma, x0):
 
-    return (y0 + a*np.exp(-(x-x0)**2/(2*Gamma**2)))
+    return (y0 + a*np.exp(-(x-x0)**2/(2*sigma**2)))
 
 #def Multi_Lorentz(x, *params):
 
@@ -20,10 +20,10 @@ def Multi_Gauss(x, *params):
     for i in range(0, len(params), 4):
         y0 = params[i]
         a = params[i+1]
-        Gamma = params[i+2]
+        sigma = params[i+2]
         x0 = params[i+3]
 
-        y = y + Gauss_func(x, y0, a, Gamma, x0)
+        y = y + Gauss_func(x, y0, a, sigma, x0)
 
     return y
 
@@ -102,7 +102,7 @@ def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
             ZPLs_temp.append(plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]), 'r', zorder=i/4))
         else:
             Vibr_Exc_temp.append(plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]), 'b', zorder=i/4))
-        print(params[i+3])
+        print(params[i+3], "+/-", np.sqrt(2*np.log(2)) * params[i+2])
 
     ZPLs, = ZPLs_temp[0]
     Vibr_Exc, = Vibr_Exc_temp[0]
