@@ -1,6 +1,7 @@
 import csv
 import os
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import numpy as np
 import scipy.optimize
 
@@ -71,6 +72,8 @@ def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
     x_plt1 = np.empty([], dtype = float)
     y_plt1 = np.empty([], dtype = float)
     y_err1 = np.empty([], dtype = float)
+    ZPLs_temp = []
+    Vibr_Exc_temp = []
 
     for i in range(0, 1044):
         if x_max > x_plt[i] > x_min:
@@ -92,11 +95,17 @@ def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
     #bounds = ([1,1,510,1,1,550,1,1,556,1,1,632,1,1,646],[np.inf,150,516,np.inf,150,555,np.inf,150,576,np.inf,150,641,np.inf,150,669])
 
     params, params_cov = scipy.optimize.curve_fit(Multi_Gauss, x_plt1, y_plt1, p0 = initial_values, sigma = y_err1, bounds = bounds, absolute_sigma = True)
-    plt.plot(x_plt, Multi_Gauss(x_plt, *params), label = 'Commulative Gauss fit')
+    Com_fit, = plt.plot(x_plt, Multi_Gauss(x_plt, *params))
 
     for i in range(0, len(params), 4):
-        plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]))
+        if i == 4 or i == 12:
+            ZPLs_temp.append(plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]), 'r', zorder=i/4))
+        else:
+            Vibr_Exc_temp.append(plt.plot(x_plt, Multi_Gauss(x_plt, *params[i:i+4]), 'b', zorder=i/4))
         print(params[i+3])
+
+    ZPLs, = ZPLs_temp[0]
+    Vibr_Exc, = Vibr_Exc_temp[0]
 
     #print(params)
 
@@ -113,6 +122,8 @@ def data_fit (x_min, x_max ,x_plt, y_plt, y_err):
         chi_squared += (y_plt1[i] - fit[i])**2/(y_err1[i])**2
 
     print("red. Chi squared : ",chi_squared/(len(x_plt1)-4))
+
+    return ZPLs, Vibr_Exc, Com_fit
 
 
 def plot_spectrum ():
@@ -205,11 +216,11 @@ def plot_spectrum ():
 
     #plot the spectrum
 
-    plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'x', markersize = .5, label = '')
+    PL = plt.errorbar(x_plt, y_plt, yerr = y_plt_err, fmt = 'o', markersize = 1)
 
     #fitting and plotting the fits
 
-    data_fit(555, 800, x_plt, y_plt, y_plt_err)
+    ZPLs, Vibr_Exc, Com_fit = data_fit(555, 800, x_plt, y_plt, y_plt_err)
 
     del x_plt_temp
     del y_plt_temp
@@ -218,9 +229,9 @@ def plot_spectrum ():
     del y_plt_temp3
 
     plt.xlabel("Wavelength [nm]", fontsize=16)
-    plt.ylabel("PL intensity [arbitrary units]", fontsize=16)
+    plt.ylabel("Intensity [arbitrary units]", fontsize=16)
     plt.grid()
-    plt.legend()
+    plt.legend(handles = [PL, ZPLs, Vibr_Exc, Com_fit], labels = ['Photoluminescence emission', 'ZPLs of $NV^0$ and $NV^-$', 'Vibronic excitations', 'Commulative Gauss fit'], prop={'size': 9})
     plt.xlim(500,900)
 
     plt.show()
