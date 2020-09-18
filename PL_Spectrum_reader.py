@@ -231,7 +231,7 @@ def plot_spectrum ():
     plt.xlabel("Wavelength [nm]", fontsize=16)
     plt.ylabel("Intensity [arbitrary units]", fontsize=16)
     plt.grid()
-    plt.legend(handles = [PL, ZPLs, Vibr_Exc, Com_fit], labels = ['Photoluminescence emission', 'ZPLs of $NV^0$ and $NV^-$', 'Vibronic excitations', 'Commulative Gauss fit'], prop={'size': 9})
+    plt.legend(handles = [PL, ZPLs, Vibr_Exc, Com_fit], labels = ['Photoluminescence\nemission', 'ZPLs of $NV^0$ and $NV^-$', 'Vibronic excitations', 'Commulative Gauss fit'], prop={'size': 10.5}, loc='upper right')
     plt.xlim(500,900)
 
     plt.show()
